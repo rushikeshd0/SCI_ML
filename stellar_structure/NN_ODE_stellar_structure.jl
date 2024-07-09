@@ -6,9 +6,9 @@ using ComponentArrays, Lux, DiffEqFlux, OrdinaryDiffEq, Optimization, Optimizati
 # r_sun = 695700 Km
 # Stellar structure equation (mass continuity) : dM/dr = 4 π r^2 ρ
 
-ρ = 1410
+ρ = 1
 u0 = Float32[0.0 ] # R centre  = 0
-rspan = (0.0f0, 695700.0f0) # 
+rspan = (0.0f0, 1.0f0) # 
 # datasize = 160
 datasize = 30
 rsteps = range(rspan[1], rspan[2]; length = datasize)
@@ -31,7 +31,9 @@ rng = Random.default_rng()
 
 plot(M_true)
 
-dudt2 = Lux.Chain( Lux.Dense(1, 10, tanh), Lux.Dense(10, 1))
+# dudt2 = Lux.Chain( Lux.Dense(1, 30, tanh), Lux.Dense(30, 1))
+dudt2 = Lux.Chain(Lux.Dense(1, 30, tanh),Lux.Dense(30, 30, relu),Lux.Dense(30, 1))
+
 
 p, st = Lux.setup(rng, dudt2)
 
@@ -48,6 +50,19 @@ function loss_neuralode(p)
     return loss, pred
 end
 
+
+callback1 = function (p, l, pred; doplot = true)
+    println(l)
+    # plot current prediction against data
+    if doplot
+        plt = scatter(rsteps, M_true[1, :]; label = "data")
+        scatter!(plt, rsteps, pred[1, :]; label = "prediction")
+        display(plot(plt))
+    end
+    return false
+end
+
+
 pinit = ComponentArray(p)
 callback1(pinit, loss_neuralode(pinit)...; doplot = true)
 
@@ -59,4 +74,27 @@ optprob = Optimization.OptimizationProblem(optf, pinit)
 
 result_neuralode = solve(optprob, OptimizationOptimisers.Adam(0.01); callback = callback1,
     maxiters = 300)
+
+
+optprob2 = remake(optprob; u0 = result_neuralode.u)
+
+result_neuralode2 = solve(optprob2, Optim.BFGS(; initial_stepnorm = 0.02);
+callback=callback1, allow_f_increases = false)
+
+callback1(result_neuralode2.u, loss_neuralode(result_neuralode2.u)...; doplot = true)
+data_pred = predict_neuralode(result_neuralode2.u)
+plot(legend=:topright)
+
+
+# data_pred = predict_neuralode(result_neuralode2.u)
+# plot()
+
+bar!(M_true[1,:], alpha = 0.3, label=" mass_true",title = "stellar structure in  NN ODE",
+xlabel = "radius", ylabel = "mass")
+
+plot!(data_pred[1,:], lw=3, label=" mass_pred",title = "stellar structure in  NN ODE",
+xlabel = "radius", ylabel = "mass")
+
+
+
 
