@@ -25,7 +25,7 @@ ode_data = Array(solve(prob_trueode, Tsit5(); saveat = rsteps))
 
 plot(ode_data')
 
-train_percent = 0.1
+train_percent = 1.0
 
 
 rng = Random.default_rng()
@@ -157,6 +157,20 @@ scatter!(test_rsteps, ode_data[1, train_datasize + 1:end]; label = "Ground truth
 # scatter!(plt, train_rsteps, pred[:,1:train_datasize]; label = "train data")
 plot!(plt, train_rsteps, data_pred[1, 1:train_datasize]; label = "UDE Training prediction",color = "blue",title = "Mass with respect to radius",xlabel = "radius",ylabel = "mass")
 plot!(plt, test_rsteps, data_pred[1, train_datasize + 1:end]; label = "UDE Forecast prediction",color = "red",title = "Mass with respect to radius",xlabel = "radius",ylabel = "mass")
+
+
+
+
+# actual term vs ude term
+
+# actual term  is r^2
+
+plot( )
+# Actual term
+plt = scatter(rsteps, ode_data[1, :]/4*π; label = "Actual term",color = "blue",title = "Actual vs UDE recovered term",xlabel = "radius",ylabel = "mass")
+# UDE term
+plot!(plt, rsteps, data_pred[1, :]/4*π; label = "UDE recovered term",color = "red",title = "Actual vs UDE recovered term",xlabel = "radius",ylabel = "mass")
+
 
 
 
